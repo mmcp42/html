@@ -1,0 +1,385 @@
+﻿<!DOCTYPE html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<meta charset="utf-8">
+	<title>Holmbeck airfield weather</title>
+	<script src="/javascript/rgraph/RGraph.common.core.js"></script>
+	<script src="/javascript/rgraph/RGraph.common.dynamic.js"></script>
+	<script src="/javascript/rgraph/RGraph.common.key.js"></script>
+	<script src="/javascript/rgraph/RGraph.line.js"></script>
+</head>
+<body " style="background-color:#84a5ed">
+	<table width="1024">
+		<tbody>
+			<tr>
+				<td width="100%">
+					<h2 style="text-align: center">Holmbeck airfield weather trend graphs
+					<select id="range" onchange="setRange();">
+						<option selected="selected" value="H">hour</option>
+						<option value="D">day</option>
+						<option value="W">week</option>
+						<option value="M">month</option>
+						<option value="Y">year</option>
+					</select></h2>
+				</td>
+			</tr>
+			<tr>
+				<td width="100%">
+					<canvas id="tempCanvas" width="300" height="200" style="background-color: white; border: 1px solid gray">[No canvas support]</canvas>
+					<canvas id="tempDewpoint" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
+					<canvas id="tempHumidity" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
+				</td>
+			</tr>
+			<tr>
+				<td width="100%">
+					<canvas id="tempWind" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
+					<canvas id="tempWindDir" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
+					<canvas id="tempBattery" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
+				</td>
+			</tr>
+			<tr>
+				<td width="100%">
+					<canvas id="tempPressure" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
+					<canvas id="tempRainfall" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
+					<canvas id="tempRainfallHour" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
+				</td>
+			</tr>
+			<tr>
+				<td width="100%">
+					<button onclick="setRange()">refresh</button>
+					<button onclick="location.href='http://www.mmcpix.com/wx.html'">show real-time guages</button><br>
+					<p>last update: <span id="lastText">  </span></p>
+					<!-- <p>reply:       <span id="replyText"> </span></p> <!-- -->
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<small>graphs are powered by <a href="http://www.Rgraph.net">RGraph</a></small>
+	<script>
+	window.onload = function ()
+	{
+		// force a range click execute initial draw
+		setRange(document.getElementById('range'));
+	}
+
+	function setRange()
+	{
+		// graph data
+		var tempHData;
+		var tempPData;
+		var dewpointData;
+		var humidityData;
+		var windData;
+		var winddirData;
+		var batteryData;
+		var pressureData;
+		var rainData;
+		var rainhourData;
+
+		// x axis labels
+		var scale;
+		var months          = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+		var days;
+		var weekdays        = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+		var hours;
+		var minutes;
+		
+		// graph objects
+		var temperature;
+		var dewpoint;
+		var humidity;
+		var wind
+		var winddir;
+		var battery;
+		var pressure;
+		var rainfall;
+		var rainfallhour;
+
+		document.getElementById("lastText").innerHTML = '';
+
+		$range = range.options[range.selectedIndex].value;
+		//document.getElementById("replyText").innerHTML = $range;
+		switch ($range)
+		{
+			// get data depending on range type
+			case 'H':
+				scale = minutes;
+				break;
+			case 'D':
+				scale = hours;
+				break;
+			case 'W':
+				scale = weekdays;
+				break;
+			case 'M':
+				scale = days;
+				break;
+			case 'Y':
+				scale = months;
+				break;
+		}
+
+		// prepare to beam data request to server
+		if (window.XMLHttpRequest)
+		{
+			// code for IE7+, Firefox, Chrome, Opera, Safari
+			xmlhttp=new XMLHttpRequest();
+		}
+		else
+		{
+			// code for IE6, IE5
+			xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		
+		// function to handle the reply
+		xmlhttp.onreadystatechange=function()
+		{
+			if (xmlhttp.readyState==4 && xmlhttp.status==200)
+			{
+				// we got a reply from the server
+				$reply = xmlhttp.responseText;
+				
+				// testing output
+				//document.getElementById("replyText").innerHTML = $reply;
+				
+				// parse the reply and update the graphs
+				$splat = $reply.split(";");
+
+				// empty the data arrays
+				tempHData = new Array();
+				tempPData = new Array();
+				dewpointData = new Array();
+				humidityData = new Array();
+				windData = new Array();
+				winddirData = new Array();
+				batteryData = new Array();
+				pressureData = new Array();
+				rainData = new Array();
+				rainhourData = new Array();
+				scale = new Array();
+				
+				// walk through the rows of data
+				for (var i=0; i<$splat.length-1; i++)
+				{
+					// get next row
+					$row = $splat[i];
+					
+					// parse the data
+					$timestamp = parseReply($row, 'timestamp', false);
+					$tempH = parseReply($row, 'tempH', true);
+					$tempP = parseReply($row, 'tempP', true);
+					$dewpoint = parseReply($row, 'dewpoint', true);
+					$humidity = parseReply($row, 'humidity', true);
+					$wind = parseReply($row, 'wind', true);
+					$winddir = parseReply($row, 'winddir', true);
+					$battery = parseReply($row, 'battery', true);
+					$pressure = parseReply($row, 'pressure', true);
+					$rain = parseReply($row, 'rain', true);
+					
+					// append to data arrays
+					tempHData.push($tempH);
+					tempPData.push($tempP);
+					dewpointData.push($dewpoint);
+					windData.push($wind);
+					winddirData.push($winddir);
+					humidityData.push($humidity);
+					batteryData.push($battery);
+					pressureData.push($pressure);
+					rainData.push($rain);
+
+					// generate x axis labels
+					switch ($range)
+					{
+						// get data depending on range type
+						// timestamp is yyyy-mm-dd hh:nn:ss
+						//              01234567890123456789
+
+						case 'H':
+							// scale is minutes
+							if ((i % 5) == 0)
+							{
+								$scaleData = $timestamp.substr(14, 2);
+								scale.push($scaleData);
+							}
+							break;
+						case 'D':
+							// scale is hours
+							if ((i % 2) == 0)
+							{
+								$scaleData = $timestamp.substr(11, 2);
+								scale.push($scaleData);
+							}
+							break;
+						case 'W':
+							// scale is days
+							if ((i % 12) == 0)
+							{
+								$scaleData = $timestamp.substr(8, 2);
+								scale.push($scaleData);
+							}
+							break;
+						case 'M':
+							// scale is days
+							$scaleData = $timestamp.substr(8, 2);
+							scale.push($scaleData);
+							break;
+						case 'Y':
+							// scale is months
+							$scaleData = $timestamp.substr(5, 2);
+							scale.push(months[$scaleData-1]);
+							break;
+					}
+				}
+	
+				// redraw the graphs
+				
+				// temperature has two lines
+				// inside(red) and outside(blue) temp
+				RGraph.Reset(document.getElementById('tempCanvas'));
+				temperature = new RGraph.Line('tempCanvas', tempPData, tempHData)
+					.Set('labels', scale)
+					.Set('gutter.left', 35)
+					.Set('ymin', -10)
+					.Set('ymax', 40)
+					.Set('key', ['inside', 'outside'])
+					.Set('key.position', 'graph')
+					.Set('key.shadow', true)
+					.Set('key.shadow.offsetx', 0)
+					.Set('key.shadow.offsety', 0)
+					.Set('key.shadow.blur', 15)
+					.Set('key.shadow.color', '#ccc')			
+					.Set('colors', ['red', 'blue'])
+					.Set('title', 'temperature \u00B0C')
+					.Set('outofbounds', true)
+					.Draw();
+
+				RGraph.Reset(document.getElementById('tempDewpoint'));
+				dewpoint = new RGraph.Line('tempDewpoint', dewpointData)
+					.Set('labels', scale)
+					.Set('gutter.left', 35)
+					.Set('ymin', -10)
+					.Set('ymax', 40)
+					.Set('title', 'dew point \u00B0C')
+					.Set('outofbounds', true)
+					.Draw();
+
+				RGraph.Reset(document.getElementById('tempHumidity'));
+				humidity = new RGraph.Line('tempHumidity', humidityData)
+					.Set('labels', scale)
+					.Set('gutter.left', 35)
+					.Set('ymin', 0)
+					.Set('ymax', 100)
+					.Set('title', 'humidity %')
+					.Draw();
+			
+				RGraph.Reset(document.getElementById('tempWind'));
+				wind = new RGraph.Line('tempWind', windData)
+					.Set('labels', scale)
+					.Set('gutter.left', 35)
+					.Set('ymax', 40)
+
+					.Set('background.grid.autofit.numhlines', 4)
+					.Set('numyticks', 8)
+					.Set('ylabels.count', 4)
+
+					.Set('title', 'wind kts')
+					.Set('outofbounds', true)
+					.Draw();
+
+				RGraph.Reset(document.getElementById('tempWindDir'));
+				winddir = new RGraph.Line('tempWindDir', winddirData)
+					.Set('labels', scale)
+					.Set('gutter.left', 35)
+					.Set('ymin', 0)
+					.Set('ymax', 360)
+					.Set('background.grid.autofit.numhlines', 8)
+					.Set('numyticks', 16)
+					.Set('ylabels.count', 8)
+					.Set('title', 'wind direction')
+					.Set('outofbounds', true)
+					.Draw();
+
+				RGraph.Reset(document.getElementById('tempBattery'));
+				battery = new RGraph.Line('tempBattery', batteryData)
+					.Set('labels', scale)
+					.Set('gutter.left', 35)
+					.Set('ymin', 3.0)
+					.Set('ymax', 4.2)
+
+					.Set('background.grid.autofit.numhlines', 6)
+					.Set('numyticks', 12)
+					.Set('ylabels.count', 6)
+
+					.Set('scale.decimals', 1)
+					.Set('title', 'battery volts')
+					.Set('outofbounds', true)
+					.Draw();
+			
+				RGraph.Reset(document.getElementById('tempPressure'));
+				pressure = new RGraph.Line('tempPressure', pressureData)
+					.Set('labels', scale)
+					.Set('gutter.left', 35)
+					.Set('title', 'pressure hPa')
+					.Set('ymin', 960)
+					.Set('ymax', 1030)
+					.Set('background.grid.autofit.numhlines', 7)
+					.Set('numyticks', 14)
+					.Set('ylabels.count', 7)
+					.Set('scale.thousand', '')
+					.Set('outofbounds', true)
+					.Draw();
+
+				RGraph.Reset(document.getElementById('tempRainfall'));
+				rainfall = new RGraph.Line('tempRainfall', rainData)
+					.Set('labels', scale)
+					.Set('gutter.left', 35)
+					.Set('ymax', 25)
+					.Set('title', 'rainfall mm')
+					.Set('outofbounds', true)
+					.Draw();
+
+				RGraph.Reset(document.getElementById('tempRainfallHour'));
+				rainfallhour = new RGraph.Line('tempRainfallHour', rainhourData)
+					.Set('labels', scale)
+					.Set('gutter.left', 35)
+					.Set('ymax', 25)
+					.Set('title', 'rainfall mm/hour')
+					.Set('outofbounds', true)
+					.Draw();
+
+				// timestamp for last update
+				$last = parseReply($row, 'timestamp', false);
+				document.getElementById("lastText").innerHTML = $last;
+			}
+		}
+		// call our script to retrieve data
+		$request = "http://www.mmcpix.com/php/wxGetRecord.php?wxid=Holmbeck&period=" + $range + "&style=A";
+		xmlhttp.open("GET",$request,true);
+		xmlhttp.send();
+		//document.getElementById("replyText").innerHTML = $request;
+	}
+
+	function parseReply(sourceText, search, isNumber)
+	{
+		// extract a vlue from the passed string
+		// expected format is xxx=value,
+		var i;
+		var reply;
+		
+		reply = sourceText;
+
+		i = sourceText.indexOf(search);
+		reply = sourceText.substr(i, 999);
+		i = reply.indexOf(',');
+		reply = reply.substr(0, i);
+		i = reply.indexOf('=');
+		reply = reply.substr(i+1, 999);
+		if (isNumber)
+			reply = reply * 1.0;
+		
+		return reply;
+	}
+	
+	</script>
+</body>
+</html>

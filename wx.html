@@ -1,0 +1,482 @@
+﻿<!DOCTYPE html>
+<html manifest="demo.manifest"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <title>Holmbeck airfield weather</title>
+</head>
+<body onload="init();" style="background-color:#84a5ed">
+    <table width="560">
+        <tbody>
+			<tr>
+				<td width="100%">
+					<h2 style="text-align: center">Holmbeck airfield weather</h2>
+				</td>
+			<tr>
+				<td width="100%">
+					<canvas id="canvasRadial1" width="180" height="180">No canvas in your browser...sorry...</canvas>
+					<canvas id="canvasRadial2" width="180" height="180"></canvas>
+					<canvas id="canvasRadial3" width="180" height="180"></canvas>
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<canvas id="spacer" width="20" height="12"></canvas>
+					<input id="rad_temp1" type="radio" name="rad_temp" value="out" checked onclick="doGetData(1);"><label id="lab_temp1" for="rad_temp1">outside</label>
+					<input id="rad_temp2" type="radio" name="rad_temp" value="in"          onclick="doGetData(1);"><label id="lab_temp2" for="rad_temp2">inside </label>
+				</td>
+			</tr>
+			<tr>
+				<td width="100%">
+					<canvas id="canvasRadial4" width="180" height="180"></canvas>
+					<canvas id="canvasWindDir5" width="180" height="180"></canvas>
+					<canvas id="canvasRadial6" width="180" height="180"></canvas>
+				</td>
+			</tr>
+			<tr>
+				<td width="100%">
+					<canvas id="canvasRadial7" width="180" height="180"></canvas>
+					<canvas id="canvasRadial8" width="180" height="180"></canvas>
+					<canvas id="canvasRadial9" width="180" height="180"></canvas>
+				</td>
+			</tr>
+			<tr>
+				<td width="100%">
+					<button onclick="doGetData(1)">refresh</button>
+					<select id="range" onchange="setRange(this);">
+						<option selected="selected" value="H">hour</option>
+						<option value="D">day</option>
+						<option value="W">week</option>
+						<option value="M">month</option>
+						<option value="Y">year</option>
+					</select>
+					<button onclick="location.href='http://www.mmcpix.com/wxgraphs.html'">show trend graphs</button>
+					
+					cloudbase:   <span id="cloudText"> </span>
+					<p>last update: <span id="lastText">  </span></p>
+	<!---				<p>reply:       <span id="replyText"> </span></p>	<!--- --->
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<small>guages are powered by <a href="http://harmoniccode.blogspot.com">steelseries</a></small>
+
+<script>
+    var rTempH,
+        rDewPoint,
+        rHumidity,
+        rWind,
+		rWindDir,
+        rBattery,
+        rPressure,
+        rRain,
+        rRainHour;
+
+
+    function init() {
+        // Define some sections
+        var temperatures = [steelseries.Section(-10,  -5, 'rgba(  0,   0, 220, 0.6)'),
+							steelseries.Section( -5,   0, 'rgba(  0,   0, 220, 0.4)'),
+							steelseries.Section(  0,  20, 'rgba(  0, 220,   0, 0.6)'),
+							steelseries.Section( 20,  30, 'rgba(220, 220,   0, 0.6)'),
+							steelseries.Section( 20,  40, 'rgba(220,   0,   0, 0.6)') ],
+
+			humidities =   [steelseries.Section(  0,  20, 'rgba(220, 220,   0, 0.6)'),
+							steelseries.Section( 20,  80, 'rgba(  0, 220,   0, 0.6)'),
+							steelseries.Section( 80, 100, 'rgba(220,   0,   0, 0.6)') ],
+
+			winds = 	   [steelseries.Section(  0,   8, 'rgba(  0, 220,   0, 0.6)'),
+							steelseries.Section(  8,  15, 'rgba(220, 220,   0, 0.6)'),
+							steelseries.Section( 15,  25, 'rgba(255, 166,   0, 0.6)'),
+							steelseries.Section( 25,  40, 'rgba(220,   0,   0, 0.6)') ],
+
+			pressures =    [steelseries.Section( 980,  990, 'rgba(220, 220,   0, 0.6)'),
+							steelseries.Section( 990, 1020, 'rgba(  0, 220,   0, 0.6)'),
+							steelseries.Section(1020, 1030, 'rgba(220,   0,   0, 0.6)') ],
+
+			volts =    	   [steelseries.Section(    0,  3.5, 'rgba(220,   0,   0, 0.6)'),
+							steelseries.Section(  3.5,  3.7, 'rgba(220, 220,   0, 0.6)'),
+							steelseries.Section(  3.7,  4.2, 'rgba(  0, 220,   0, 0.6)') ],
+			
+			areaTemp = [steelseries.Section(10, 20, 'rgba(255, 127, 127, 0.5)')],
+
+            rainGrad = new steelseries.gradientWrapper(  0,
+                                                        25,
+                                                        [ 0, 0.2, 0.4, 1],
+                                                        [ new steelseries.rgbaColor(  0, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1) ]),
+														  
+			// Define value gradient for bargraph
+            valGrad = new steelseries.gradientWrapper(   0,
+                                                        25,
+                                                        [ 0, 0.2, 0.4, 1],
+                                                        [ new steelseries.rgbaColor(  0, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1) ]);
+
+        // Initialzing gauges
+        rTempH = new steelseries.Radial('canvasRadial1', {
+                            gaugeType: steelseries.GaugeType.TYPE4,
+                            size: 180,
+                            section: temperatures,
+                            titleString: 'temperature',
+                            unitString: '\u00B0C',
+							minValue: -10,
+							maxValue: 40,
+							lcdDecimals: 1,
+							thresholdVisible: false,
+							ledVisible: false,
+                            lcdVisible: true
+                        });
+        rTempH.setFrameDesign(steelseries.FrameDesign.BLACK_METAL);
+		rTempH.setBackgroundColor(steelseries.BackgroundColor.DARK_GRAY);
+		rTempH.setPointerType(steelseries.PointerType.TYPE9);
+		rTempH.setLcdColor(steelseries.LcdColor.GRAY);
+		rTempH.setForegroundType(steelseries.ForegroundType.TYPE3);
+
+        rDewPoint = new steelseries.Radial('canvasRadial2', {
+                            gaugeType: steelseries.GaugeType.TYPE4,
+                            size: 180,
+                            section: temperatures,
+                            titleString: 'dew point',
+                            unitString: '\u00B0C',
+							minValue: -10,
+							maxValue: 40,
+							lcdDecimals: 1,
+							thresholdVisible: false,
+							ledVisible: false,
+                            lcdVisible: true
+                        });
+        rDewPoint.setFrameDesign(steelseries.FrameDesign.BLACK_METAL);
+		rDewPoint.setBackgroundColor(steelseries.BackgroundColor.DARK_GRAY);
+		rDewPoint.setPointerType(steelseries.PointerType.TYPE9);
+		rDewPoint.setLcdColor(steelseries.LcdColor.GRAY);
+		rDewPoint.setForegroundType(steelseries.ForegroundType.TYPE3);
+
+        rHumidity = new steelseries.Radial('canvasRadial3', {
+                            gaugeType: steelseries.GaugeType.TYPE4,
+                            size: 180,
+                            section: humidities,
+                            titleString: 'humidity',
+                            unitString: '%',
+							lcdDecimals: 1,
+							thresholdVisible: false,
+							ledVisible: false,
+                            lcdVisible: true
+                        });
+        rHumidity.setFrameDesign(steelseries.FrameDesign.BLACK_METAL);
+		rHumidity.setBackgroundColor(steelseries.BackgroundColor.DARK_GRAY);
+		rHumidity.setPointerType(steelseries.PointerType.TYPE9);
+		rHumidity.setLcdColor(steelseries.LcdColor.GRAY);
+		rHumidity.setForegroundType(steelseries.ForegroundType.TYPE3);
+
+        rWind = new steelseries.Radial('canvasRadial4', {
+                            gaugeType: steelseries.GaugeType.TYPE4,
+                            size: 180,
+                            section: winds,
+                            titleString: 'wind speed',
+                            unitString: 'knots',
+							thresholdVisible: false,
+							minValue: 0,
+							maxValue: 40,
+							lcdDecimals: 1,
+							ledVisible: false,
+                            lcdVisible: true
+                        });
+        rWind.setFrameDesign(steelseries.FrameDesign.BLACK_METAL);
+		rWind.setBackgroundColor(steelseries.BackgroundColor.DARK_GRAY);
+		rWind.setPointerType(steelseries.PointerType.TYPE9);
+		rWind.setLcdColor(steelseries.LcdColor.GRAY);
+		rWind.setForegroundType(steelseries.ForegroundType.TYPE3);
+
+        rWindDir = new steelseries.WindDirection('canvasWindDir5', {
+                            size: 180,
+							digitaFont: true,
+							lcdVisible: true
+                            });
+        rWindDir.setFrameDesign(steelseries.FrameDesign.BLACK_METAL);
+		rWindDir.setBackgroundColor(steelseries.BackgroundColor.DARK_GRAY);
+		rWindDir.setPointerType(steelseries.PointerType.TYPE9);
+		rWindDir.setPointerTypeAverage(steelseries.PointerType.TYPE9);
+		rWindDir.setLcdColor(steelseries.LcdColor.GRAY);
+		rWindDir.setForegroundType(steelseries.ForegroundType.TYPE3);
+							
+        rBattery = new steelseries.Radial('canvasRadial6', {
+                            gaugeType: steelseries.GaugeType.TYPE4,
+                            size: 180,
+                            section: volts,
+							useSectionColors: true,
+                            titleString: 'battery',
+                            unitString: 'volts',
+							minValue: 3.0,
+							maxValue: 4.2,
+							lcdDecimals: 2,
+							threshold: 3.7,
+							labelNumberFormat:  steelseries.LabelNumberFormat.SCIENTIFIC,
+							ledVisible: false,
+                            lcdVisible: true
+                        });
+        rBattery.setFrameDesign(steelseries.FrameDesign.BLACK_METAL);
+		rBattery.setBackgroundColor(steelseries.BackgroundColor.DARK_GRAY);
+		rBattery.setPointerType(steelseries.PointerType.TYPE9);
+		rBattery.setLcdColor(steelseries.LcdColor.GRAY);
+		rBattery.setForegroundType(steelseries.ForegroundType.TYPE3);
+
+        rPressure = new steelseries.Radial('canvasRadial7', {
+                            gaugeType: steelseries.GaugeType.TYPE4,
+                            size: 180,
+                            section: pressures,
+                            titleString: 'pressure',
+                            unitString: 'hPa',
+							thresholdVisible: false,
+							minValue: 960,
+							maxValue: 1030,
+							lcdDecimals: 0,
+							ledVisible: false,
+                            lcdVisible: true
+                        });
+        rPressure.setFrameDesign(steelseries.FrameDesign.BLACK_METAL);
+		rPressure.setBackgroundColor(steelseries.BackgroundColor.DARK_GRAY);
+		rPressure.setPointerType(steelseries.PointerType.TYPE9);
+		rPressure.setLcdColor(steelseries.LcdColor.GRAY);
+		rPressure.setForegroundType(steelseries.ForegroundType.TYPE3);
+
+        rRain = new steelseries.RadialBargraph('canvasRadial8', {
+                            gaugeType: steelseries.GaugeType.TYPE4,
+                            size: 180,
+                            valueGradient: rainGrad,
+                            useValueGradient: true,
+                            useSectionColors: true,
+                            titleString: 'rainfall',
+                            unitString: 'mm',
+							minValue: 0,
+							maxValue: 25,
+							lcdDecimals: 1,
+							ledVisible: false,
+                            lcdVisible: true
+                        });
+        rRain.setFrameDesign(steelseries.FrameDesign.BLACK_METAL);
+		rRain.setBackgroundColor(steelseries.BackgroundColor.DARK_GRAY);
+		rRain.setLcdColor(steelseries.LcdColor.GRAY);
+		rRain.setForegroundType(steelseries.ForegroundType.TYPE3);
+
+        rRainHour = new steelseries.RadialBargraph('canvasRadial9', {
+                            gaugeType: steelseries.GaugeType.TYPE4,
+                            size: 180,
+                            valueGradient: valGrad,
+                            useValueGradient: true,
+                            useSectionColors: true,
+                            titleString: 'rainfall',
+                            unitString: 'mm/hr',
+							minValue: 0,
+							maxValue: 25,
+							lcdDecimals: 1,
+							ledVisible: false,
+                            lcdVisible: true
+                        });
+        rRainHour.setFrameDesign(steelseries.FrameDesign.BLACK_METAL);
+		rRainHour.setBackgroundColor(steelseries.BackgroundColor.DARK_GRAY);
+		rRainHour.setLcdColor(steelseries.LcdColor.GRAY);
+		rRainHour.setForegroundType(steelseries.ForegroundType.TYPE3);
+
+		// initial data fill
+		doGetData(1);
+		
+		// start the countdown timer
+		setInterval(function(){showTimeLeft();}, 1000);
+		
+    }
+
+	function showTimeLeft()
+	{
+		$text = 'auto refresh ' + $getCount + ' in ' + $timeLeft + ' seconds';
+		if ($timeLeft==0 && $getCount>0)
+			getData();
+		if ($timeLeft > 0)
+			$timeLeft--;
+		if ($getCount==0)
+			$text = 'auto update is off, click refresh';
+		//countDown.setValue($text);
+	}
+	
+	function doGetData($x)
+	{
+		// only refresh fixed number of times
+		$getCount = $x;
+		getData();
+	}
+	
+	// default range
+	$range = 'H';
+	
+	function getData()
+	{
+		// check too many refreshes
+		if ($getCount<=0)
+			return;
+		$getCount = $getCount-1;
+		if ($getCount>0)
+			$timeLeft = 10;
+		
+		document.getElementById("lastText").innerHTML = '';
+			
+		if (window.XMLHttpRequest)
+		{
+			// code for IE7+, Firefox, Chrome, Opera, Safari
+			xmlhttp=new XMLHttpRequest();
+		}
+		else
+		{
+			// code for IE6, IE5
+			xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		xmlhttp.onreadystatechange=function()
+		{
+			if (xmlhttp.readyState==4 && xmlhttp.status==200)
+			{
+				// we got a reply from the server
+				$reply = xmlhttp.responseText;
+				
+				// testing output
+				//document.getElementById("replyText").innerHTML = $reply;
+				
+				// parse the reply and update the dials
+				
+				// temperature and range
+				$tempH = parseReply($reply, 'tempH', true);
+				$tempP = parseReply($reply, 'tempP', true);
+				if (document.getElementById('rad_temp1').checked)
+				{
+					// use humidity temperature for outside
+					rTempH.setValueAnimated($tempH);
+
+					$minTemp = parseReply($reply, 'mintempH', true);
+					$maxTemp = parseReply($reply, 'maxtempH', true);
+				}
+				else
+				{
+					// use pressure temperature for inside
+					rTempH.setValueAnimated($tempP);
+
+					$minTemp = parseReply($reply, 'mintempP', true);
+					$maxTemp = parseReply($reply, 'maxtempP', true);
+				}
+
+				// temperature range
+				$area = [steelseries.Section($minTemp, $maxTemp, 'rgba(255, 127, 127, 0.5)')];
+				rTempH.setArea($area);
+				
+				// wind
+				$wind = parseReply($reply, 'wind');
+				rWind.setValueAnimated($wind);
+					
+				// wind range
+				$minwind = parseReply($reply, 'minwind', true);
+				$maxwind = parseReply($reply, 'maxwind', true);
+				$area = [steelseries.Section($minwind, $maxwind, 'rgba(255, 127, 127, 0.5)')];
+				rWind.setArea($area);
+
+				// humidity
+				$humidity = parseReply($reply, 'humidity', true);
+				rHumidity.setValueAnimated($humidity);
+				
+				// humidity range
+				$minHumidity = parseReply($reply, 'minhumidity', true);
+				$maxHumidity = parseReply($reply, 'maxhumidity', true);
+				$area = [steelseries.Section($minHumidity, $maxHumidity, 'rgba(255, 127, 127, 0.5)')];
+				rHumidity.setArea($area);
+				
+				// wind direction
+				$windDir = parseReply($reply, 'winddir', true);
+				rWindDir.setValueAnimatedLatest($windDir);
+
+				// wind direction range
+				$minWindDir = parseReply($reply, 'minwinddir', true);
+				$maxWindDir = parseReply($reply, 'maxwinddir', true);
+				$area = [steelseries.Section($minWindDir, $maxWindDir, 'rgba(255, 127, 127, 0.5)')];
+				//rWindDir.setArea($area);
+				
+				// battery voltage
+				$battery = parseReply($reply, 'battery', true);
+				rBattery.setValueAnimated($battery);
+
+				// battery range
+				$minBattery = parseReply($reply, 'minbattery', true);
+				$maxBattery = parseReply($reply, 'maxbattery', true);
+				$area = [steelseries.Section($minBattery, $maxBattery, 'rgba(255, 127, 127, 0.5)')];
+				rBattery.setArea($area);
+				
+				// pressure
+				$pressure = parseReply($reply, 'pressure', true);
+				rPressure.setValueAnimated($pressure);
+
+				// pressure range
+				$minPressure = parseReply($reply, 'minpressure', true);
+				$maxPressure = parseReply($reply, 'maxpressure', true);
+				//document.getElementById('replyText').innerHTML = 'minPressure: ' + $minPressure + ', maxPressure: ' + $maxPressure;
+				$area = [steelseries.Section($minPressure, $maxPressure, 'rgba(255, 127, 127, 0.5)')];
+				rPressure.setArea($area);
+
+				// rain
+				$rain = parseReply($reply, 'rain', true);
+				rRain.setValueAnimated($rain);
+
+				// calculate dew point 
+				// (do this last as we need $temp and $humidity)
+				$dewPoint = parseReply($reply, 'dewpoint', true);
+				rDewPoint.setValueAnimated($dewPoint);
+
+				// dew point range
+				$mindewpoint = parseReply($reply, 'mindewpoint', true);
+				$maxdewpoint = parseReply($reply, 'maxdewpoint', true);
+				//document.getElementById('replyText').innerHTML = 'mindewpoint: ' + $mindewpoint + ', maxdewpoint: ' + $maxdewpoint;
+				$area = [steelseries.Section($mindewpoint, $maxdewpoint, 'rgba(255, 127, 127, 0.5)')];
+				rDewPoint.setArea($area);
+				
+				// calculate cloud base (needs $tempH and $dewPoint)
+				$cloudBase = Math.round(($tempH - $dewPoint) * 5) * 100;
+				document.getElementById('cloudText').innerHTML = $cloudBase  + "' (estimated)";
+
+				// timestamp for last update
+				$last = parseReply($reply, 'timestamp', false);
+				document.getElementById("lastText").innerHTML = $last;
+			}
+		}
+		// call our script to retrieve data
+		xmlhttp.open("GET","http://www.mmcpix.com/php/wxGetRecord.php?wxid=Holmbeck&period=" + $range + "&style=T",true);
+		xmlhttp.send();
+	}
+
+	function parseReply(sourceText, search, isNumber)
+	{
+		var i;
+		var reply;
+		
+		reply = sourceText;
+		// document.getElementById("replyText").innerHTML = reply;
+
+		i = sourceText.indexOf(search);
+		reply = sourceText.substr(i, 999);
+		i = reply.indexOf(',');
+		reply = reply.substr(0, i);
+		i = reply.indexOf('=');
+		reply = reply.substr(i+1, 999);
+		if (isNumber)
+			reply = reply * 1.0;
+		
+		return reply;
+	}
+
+	function setRange(sel)
+	{
+		// set range type
+        $range = sel.options[sel.selectedIndex].value;
+		doGetData(1);
+	}
+	
+</script>
+<script src="/javascript/steel/tween-min.js"></script>
+<script src="/javascript/steel/steelseries-min.js"></script>
+</body></html>
