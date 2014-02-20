@@ -97,15 +97,41 @@
 							steelseries.Section(  3.5,  3.7, 'rgba(220, 220,   0, 0.6)'),
 							steelseries.Section(  3.7,  4.2, 'rgba(  0, 220,   0, 0.6)') ],
 			
-			areaTemp = [steelseries.Section(10, 20, 'rgba(255, 127, 127, 0.5)')],
-
-            rainGrad = new steelseries.gradientWrapper(  0,
+            rainGradH = new steelseries.gradientWrapper(  0,
                                                         25,
                                                         [ 0, 0.2, 0.4, 1],
                                                         [ new steelseries.rgbaColor(  0, 200, 0, 1),
                                                           new steelseries.rgbaColor(200, 200, 0, 1),
                                                           new steelseries.rgbaColor(200,   0, 0, 1),
-                                                          new steelseries.rgbaColor(200,   0, 0, 1) ]),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1) ]);
+            rainGradD = new steelseries.gradientWrapper(  0,
+                                                        50,
+                                                        [ 0, 0.2, 0.4, 1],
+                                                        [ new steelseries.rgbaColor(  0, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1) ]);
+            rainGradW = new steelseries.gradientWrapper(  0,
+                                                        100,
+                                                        [ 0, 0.2, 0.4, 1],
+                                                        [ new steelseries.rgbaColor(  0, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1) ]);
+            rainGradM = new steelseries.gradientWrapper(  0,
+                                                        250,
+                                                        [ 0, 0.2, 0.4, 1],
+                                                        [ new steelseries.rgbaColor(  0, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1) ]);
+            rainGradY = new steelseries.gradientWrapper(  0,
+                                                        1500,
+                                                        [ 0, 0.2, 0.4, 1],
+                                                        [ new steelseries.rgbaColor(  0, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200, 200, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1),
+                                                          new steelseries.rgbaColor(200,   0, 0, 1) ]);
 														  
 			// Define value gradient for bargraph
             valGrad = new steelseries.gradientWrapper(   0,
@@ -228,7 +254,7 @@
                             gaugeType: steelseries.GaugeType.TYPE4,
                             size: 180,
                             section: pressures,
-                            titleString: 'pressure',
+                            titleString: 'QFE',
                             unitString: 'hPa',
 							thresholdVisible: false,
 							minValue: 960,
@@ -246,7 +272,7 @@
         rRain = new steelseries.RadialBargraph('canvasRadial8', {
                             gaugeType: steelseries.GaugeType.TYPE4,
                             size: 180,
-                            valueGradient: rainGrad,
+                            valueGradient: rainGradH,
                             useValueGradient: true,
                             useSectionColors: true,
                             titleString: 'rainfall',
@@ -473,6 +499,35 @@
 	{
 		// set range type
         $range = sel.options[sel.selectedIndex].value;
+		
+		// adjust rainfall max
+		rRain.setValue(0);
+		rRain.repaint();
+		switch($range)
+		{
+		case 'H': 
+				rRrRain.setGradient(rainGradH); 
+				rRain.setMaxValue(25);  
+				break;
+		case 'D': 
+				rRain.setGradient(rainGradD); 
+				rRain.setMaxValue(50);  
+				break;
+		case 'W': 
+				rRain.setGradient(rainGradW); 
+				rRain.setMaxValue(100); 
+				break;
+		case 'M': 
+				rRain.setGradient(rainGradM); 
+				rRain.setMaxValue(250); 
+				break;
+		case 'Y':
+				rRain.setGradient(rainGradY); 
+				rRain.setMaxValue(1500); 
+				break;
+		}
+		rRain.repaint();
+		// get some data
 		doGetData(1);
 	}
 	
