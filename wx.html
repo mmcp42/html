@@ -1,11 +1,10 @@
 ﻿<!DOCTYPE html>
 <head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-    <meta charset="utf-8">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
     <title>Holmbeck airfield weather</title>
 </head>
 <body onload="init();" style="background-color:#84a5ed">
-    <table width="560">
+    <table width="800">
         <tbody>
 			<tr>
 				<td width="100%">
@@ -16,27 +15,15 @@
 					<canvas id="canvasRadial1" width="180" height="180">No canvas in your browser...sorry...</canvas>
 					<canvas id="canvasRadial2" width="180" height="180"></canvas>
 					<canvas id="canvasRadial3" width="180" height="180"></canvas>
-				</td>
-			</tr>
-			<tr>
-				<td>
-					<canvas id="spacer" width="20" height="12"></canvas>
-					<input id="rad_temp1" type="radio" name="rad_temp" value="out" checked onclick="doGetData(1);"><label id="lab_temp1" for="rad_temp1">outside</label>
-					<input id="rad_temp2" type="radio" name="rad_temp" value="in"          onclick="doGetData(1);"><label id="lab_temp2" for="rad_temp2">inside </label>
+					<canvas id="canvasRadial6" width="180" height="180"></canvas>
 				</td>
 			</tr>
 			<tr>
 				<td width="100%">
 					<canvas id="canvasRadial4" width="180" height="180"></canvas>
 					<canvas id="canvasWindDir5" width="180" height="180"></canvas>
-					<canvas id="canvasRadial6" width="180" height="180"></canvas>
-				</td>
-			</tr>
-			<tr>
-				<td width="100%">
 					<canvas id="canvasRadial7" width="180" height="180"></canvas>
 					<canvas id="canvasRadial8" width="180" height="180"></canvas>
-					<canvas id="canvasRadial9" width="180" height="180"></canvas>
 				</td>
 			</tr>
 			<tr>
@@ -68,8 +55,7 @@
 		rWindDir,
         rBattery,
         rPressure,
-        rRain,
-        rRainHour;
+        rRain;
 
 
     function init() {
@@ -288,25 +274,6 @@
 		rRain.setLcdColor(steelseries.LcdColor.GRAY);
 		rRain.setForegroundType(steelseries.ForegroundType.TYPE3);
 
-        rRainHour = new steelseries.RadialBargraph('canvasRadial9', {
-                            gaugeType: steelseries.GaugeType.TYPE4,
-                            size: 180,
-                            valueGradient: valGrad,
-                            useValueGradient: true,
-                            useSectionColors: true,
-                            titleString: 'rainfall',
-                            unitString: 'mm/hr',
-							minValue: 0,
-							maxValue: 25,
-							lcdDecimals: 1,
-							ledVisible: false,
-                            lcdVisible: true
-                        });
-        rRainHour.setFrameDesign(steelseries.FrameDesign.BLACK_METAL);
-		rRainHour.setBackgroundColor(steelseries.BackgroundColor.DARK_GRAY);
-		rRainHour.setLcdColor(steelseries.LcdColor.GRAY);
-		rRainHour.setForegroundType(steelseries.ForegroundType.TYPE3);
-
 		// initial data fill
 		doGetData(1);
 		
@@ -346,7 +313,7 @@
 		if ($getCount>0)
 			$timeLeft = 10;
 		
-		document.getElementById("lastText").innerHTML = '';
+		document.getElementById("lastText").innerHTML = 'calculating';
 			
 		if (window.XMLHttpRequest)
 		{
@@ -370,25 +337,21 @@
 				
 				// parse the reply and update the dials
 				
-				// temperature and range
+				// temperature
 				$tempH = parseReply($reply, 'tempH', true);
 				$tempP = parseReply($reply, 'tempP', true);
-				if (document.getElementById('rad_temp1').checked)
-				{
-					// use humidity temperature for outside
-					rTempH.setValueAnimated($tempH);
+				
+				$minTempH = parseReply($reply, 'mintempH', true);
+				$maxTempH = parseReply($reply, 'maxtempH', true);
 
-					$minTemp = parseReply($reply, 'mintempH', true);
-					$maxTemp = parseReply($reply, 'maxtempH', true);
-				}
-				else
-				{
-					// use pressure temperature for inside
-					rTempH.setValueAnimated($tempP);
+				$minTempP = parseReply($reply, 'mintempP', true);
+				$maxTempP = parseReply($reply, 'maxtempP', true);
 
-					$minTemp = parseReply($reply, 'mintempP', true);
-					$maxTemp = parseReply($reply, 'maxtempP', true);
-				}
+				$temp = ($tempH + $tempP) / 2;
+				$minTemp = ($minTempH + $minTempP) / 2;
+				$maxTemp = ($maxTempH + $maxTempP) / 2;
+
+				rTempH.setValueAnimated($temp);
 
 				// temperature range
 				$area = [steelseries.Section($minTemp, $maxTemp, 'rgba(255, 127, 127, 0.5)')];
