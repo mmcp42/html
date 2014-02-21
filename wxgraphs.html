@@ -9,7 +9,7 @@
 	<script src="/javascript/rgraph/RGraph.line.js"></script>
 </head>
 <body " style="background-color:#84a5ed">
-	<table width="1024">
+	<table width="1240">
 		<tbody>
 			<tr>
 				<td width="100%">
@@ -28,20 +28,15 @@
 					<canvas id="tempCanvas" width="300" height="200" style="background-color: white; border: 1px solid gray">[No canvas support]</canvas>
 					<canvas id="tempDewpoint" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
 					<canvas id="tempHumidity" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
+					<canvas id="tempBattery" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
 				</td>
 			</tr>
 			<tr>
 				<td width="100%">
 					<canvas id="tempWind" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
 					<canvas id="tempWindDir" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
-					<canvas id="tempBattery" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
-				</td>
-			</tr>
-			<tr>
-				<td width="100%">
 					<canvas id="tempPressure" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
 					<canvas id="tempRainfall" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
-					<canvas id="tempRainfallHour" width="300" height="200" style="background-color: white; border: 1px solid gray"></canvas>
 				</td>
 			</tr>
 			<tr>
@@ -49,7 +44,7 @@
 					<button onclick="setRange()">refresh</button>
 					<button onclick="location.href='http://www.mmcpix.com/wx.html'">show real-time gauges</button><br>
 					<p>last update: <span id="lastText">  </span></p>
-					<!-- <p>reply:       <span id="replyText"> </span></p> <!-- -->
+					<!----> <p>reply:       <span id="replyText"> </span></p> <!-- -->
 				</td>
 			</tr>
 		</tbody>
@@ -65,8 +60,9 @@
 	function setRange()
 	{
 		// graph data
-		var tempHData;
-		var tempPData;
+		//var tempHData;
+		//var tempPData;
+		var tempData;
 		var dewpointData;
 		var humidityData;
 		var windData;
@@ -95,7 +91,7 @@
 		var rainfall;
 		var rainfallhour;
 
-		document.getElementById("lastText").innerHTML = '';
+		document.getElementById("lastText").innerHTML = 'calculating';
 
 		$range = range.options[range.selectedIndex].value;
 		//document.getElementById("replyText").innerHTML = $range;
@@ -146,8 +142,7 @@
 				$splat = $reply.split(";");
 
 				// empty the data arrays
-				tempHData = new Array();
-				tempPData = new Array();
+				tempData = new Array();
 				dewpointData = new Array();
 				humidityData = new Array();
 				windData = new Array();
@@ -177,8 +172,7 @@
 					$rain = parseReply($row, 'rain', true);
 					
 					// append to data arrays
-					tempHData.push($tempH);
-					tempPData.push($tempP);
+					tempData.push(($tempH + $tempP)/2);
 					dewpointData.push($dewpoint);
 					windData.push($wind);
 					winddirData.push($winddir);
@@ -195,38 +189,54 @@
 						//              01234567890123456789
 
 						case 'H':
-							// scale is minutes
+							// scale is minutes; 60 records
 							if ((i % 5) == 0)
 							{
+								// tick every 5 minutes
 								$scaleData = $timestamp.substr(14, 2);
 								scale.push($scaleData);
 							}
+							document.getElementById("replyText").innerHTML = $scaleData;
 							break;
 						case 'D':
-							// scale is hours
+							// scale is hours; 24 records
 							if ((i % 2) == 0)
 							{
+								// tick every other hour
 								$scaleData = $timestamp.substr(11, 2);
 								scale.push($scaleData);
 							}
+							document.getElementById("replyText").innerHTML = $scaleData;
 							break;
 						case 'W':
-							// scale is days
+							// scale is days; 7*24 records
 							if ((i % 12) == 0)
 							{
+								// tick every 12 hours
 								$scaleData = $timestamp.substr(8, 2);
 								scale.push($scaleData);
 							}
+							document.getElementById("replyText").innerHTML = $scaleData;
 							break;
 						case 'M':
-							// scale is days
-							$scaleData = $timestamp.substr(8, 2);
-							scale.push($scaleData);
+							// scale is days; 30 records
+							if ((i % 2) == 0)
+							{
+								// tick every 2 days
+								$scaleData = $timestamp.substr(8, 2);
+								scale.push($scaleData);
+							}
+							document.getElementById("replyText").innerHTML = $scaleData;
 							break;
 						case 'Y':
 							// scale is months
-							$scaleData = $timestamp.substr(5, 2);
-							scale.push(months[$scaleData-1]);
+							if ((i % 30) == 0)
+							{
+								// tick every 1 day; up to 365 records!
+								$scaleData = $timestamp.substr(5, 2);
+								scale.push(months[$scaleData-1]);
+							}
+							document.getElementById("replyText").innerHTML = $scaleData;
 							break;
 					}
 				}
@@ -236,19 +246,11 @@
 				// temperature has two lines
 				// inside(red) and outside(blue) temp
 				RGraph.Reset(document.getElementById('tempCanvas'));
-				temperature = new RGraph.Line('tempCanvas', tempPData, tempHData)
+				temperature = new RGraph.Line('tempCanvas', tempData)
 					.Set('labels', scale)
 					.Set('gutter.left', 35)
 					.Set('ymin', -10)
 					.Set('ymax', 40)
-					.Set('key', ['inside', 'outside'])
-					.Set('key.position', 'graph')
-					.Set('key.shadow', true)
-					.Set('key.shadow.offsetx', 0)
-					.Set('key.shadow.offsety', 0)
-					.Set('key.shadow.blur', 15)
-					.Set('key.shadow.color', '#ccc')			
-					.Set('colors', ['red', 'blue'])
 					.Set('title', 'temperature \u00B0C')
 					.Set('outofbounds', true)
 					.Draw();
@@ -338,15 +340,7 @@
 					.Set('outofbounds', true)
 					.Draw();
 
-				RGraph.Reset(document.getElementById('tempRainfallHour'));
-				rainfallhour = new RGraph.Line('tempRainfallHour', rainhourData)
-					.Set('labels', scale)
-					.Set('gutter.left', 35)
-					.Set('ymax', 25)
-					.Set('title', 'rainfall mm/hour')
-					.Set('outofbounds', true)
-					.Draw();
-
+				document.getElementById("lastText").innerHTML = "done";
 				// timestamp for last update
 				$last = parseReply($row, 'timestamp', false);
 				document.getElementById("lastText").innerHTML = $last;
@@ -356,7 +350,6 @@
 		$request = "http://www.mmcpix.com/php/wxGetRecord.php?wxid=Holmbeck&period=" + $range + "&style=A";
 		xmlhttp.open("GET",$request,true);
 		xmlhttp.send();
-		//document.getElementById("replyText").innerHTML = $request;
 	}
 
 	function parseReply(sourceText, search, isNumber)
