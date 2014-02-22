@@ -44,7 +44,7 @@
 					<button onclick="setRange()">refresh</button>
 					<button onclick="location.href='http://www.mmcpix.com/wx.html'">show real-time gauges</button><br>
 					<p>last update: <span id="lastText">  </span></p>
-					<!----> <p>reply:       <span id="replyText"> </span></p> <!-- -->
+					<!-- <p>reply:       <span id="replyText"> </span></p> <!-- -->
 				</td>
 			</tr>
 		</tbody>
@@ -196,7 +196,7 @@
 								$scaleData = $timestamp.substr(14, 2);
 								scale.push($scaleData);
 							}
-							document.getElementById("replyText").innerHTML = $scaleData;
+							//document.getElementById("replyText").innerHTML = $scaleData;
 							break;
 						case 'D':
 							// scale is hours; 24 records
@@ -206,7 +206,7 @@
 								$scaleData = $timestamp.substr(11, 2);
 								scale.push($scaleData);
 							}
-							document.getElementById("replyText").innerHTML = $scaleData;
+							//document.getElementById("replyText").innerHTML = $scaleData;
 							break;
 						case 'W':
 							// scale is days; 7*24 records
@@ -216,7 +216,7 @@
 								$scaleData = $timestamp.substr(8, 2);
 								scale.push($scaleData);
 							}
-							document.getElementById("replyText").innerHTML = $scaleData;
+							//document.getElementById("replyText").innerHTML = $scaleData;
 							break;
 						case 'M':
 							// scale is days; 30 records
@@ -226,7 +226,7 @@
 								$scaleData = $timestamp.substr(8, 2);
 								scale.push($scaleData);
 							}
-							document.getElementById("replyText").innerHTML = $scaleData;
+							//document.getElementById("replyText").innerHTML = $scaleData;
 							break;
 						case 'Y':
 							// scale is months
@@ -236,7 +236,7 @@
 								$scaleData = $timestamp.substr(5, 2);
 								scale.push(months[$scaleData-1]);
 							}
-							document.getElementById("replyText").innerHTML = $scaleData;
+							//document.getElementById("replyText").innerHTML = $scaleData;
 							break;
 					}
 				}
