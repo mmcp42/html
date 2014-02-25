@@ -81,7 +81,7 @@
 
 			volts =    	   [steelseries.Section(    0,  3.5, 'rgba(220,   0,   0, 0.6)'),
 							steelseries.Section(  3.5,  3.7, 'rgba(220, 220,   0, 0.6)'),
-							steelseries.Section(  3.7,  4.2, 'rgba(  0, 220,   0, 0.6)') ],
+							steelseries.Section(  3.7,  4.2, 'rgba(  0, 220,   0, 0.6)') ];
 			
             rainGradH = new steelseries.gradientWrapper(  0,
                                                         25,
@@ -113,15 +113,6 @@
                                                           new steelseries.rgbaColor(200,   0, 0, 1) ]);
             rainGradY = new steelseries.gradientWrapper(  0,
                                                         1500,
-                                                        [ 0, 0.2, 0.4, 1],
-                                                        [ new steelseries.rgbaColor(  0, 200, 0, 1),
-                                                          new steelseries.rgbaColor(200, 200, 0, 1),
-                                                          new steelseries.rgbaColor(200,   0, 0, 1),
-                                                          new steelseries.rgbaColor(200,   0, 0, 1) ]);
-														  
-			// Define value gradient for bargraph
-            valGrad = new steelseries.gradientWrapper(   0,
-                                                        25,
                                                         [ 0, 0.2, 0.4, 1],
                                                         [ new steelseries.rgbaColor(  0, 200, 0, 1),
                                                           new steelseries.rgbaColor(200, 200, 0, 1),
@@ -469,7 +460,7 @@
 		switch($range)
 		{
 		case 'H': 
-				rRrRain.setGradient(rainGradH); 
+				rRain.setGradient(rainGradH); 
 				rRain.setMaxValue(25);  
 				break;
 		case 'D': 
